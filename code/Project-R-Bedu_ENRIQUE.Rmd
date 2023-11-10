@@ -146,6 +146,7 @@ ggplot(dataset, aes(x = Cholesterol, y = triglyceride)) +
 
 
 ```{r}
+#prueba de actualización1
 
 ```
 
