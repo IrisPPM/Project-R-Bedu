@@ -146,7 +146,6 @@ ggplot(dataset, aes(x = Cholesterol, y = triglyceride)) +
 
 
 ```{r}
-#Branch de Enrique , prueba para ver si se actualiza en mi rama.
 
 ```
 
