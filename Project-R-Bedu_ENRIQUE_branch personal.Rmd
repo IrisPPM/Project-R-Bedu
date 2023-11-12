@@ -247,10 +247,8 @@ predicciones_arbol <- predict(modelo_arbol, datos_prueba,type = "class")
 verdaderos <- datos_prueba$smoking  
 predicciones <- predicciones_arbol
 
-# Crea la matriz de confusión
 mc <- confusionMatrix(predicciones, verdaderos)
 
-# Muestra la matriz de confusión
 print(mc)
 
 ```
