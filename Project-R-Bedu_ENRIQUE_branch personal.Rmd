@@ -235,6 +235,23 @@ library(rpart)
 
 modelo_arbol <- rpart(smoking ~ ., data = datos_entrenamiento, method = "class")
 
+predicciones_arbol <- predict(modelo_arbol, datos_prueba,type = "class")
+
+```
+
+
+```{r}
+
+#MATRIZ DE CONFUSIÓN
+
+verdaderos <- datos_prueba$smoking  
+predicciones <- predicciones_arbol
+
+# Crea la matriz de confusión
+mc <- confusionMatrix(predicciones, verdaderos)
+
+# Muestra la matriz de confusión
+print(mc)
 
 ```
 
@@ -244,12 +261,15 @@ modelo_arbol <- rpart(smoking ~ ., data = datos_entrenamiento, method = "class")
 library(e1071)
 
 
-modelo_svm <- svm(smoking ~ ., data = datos_entrenamiento, kernel = "radial", cost = 1)
+#modelo_svm <- svm(smoking ~ ., data = datos_entrenamiento, kernel = "radial", cost = 1)
+#predicciones_svm <- predict(modelo_svm, datos_prueba,type = "class")
+
+
 ```
 
 
 ```{r}
-predicciones <- predict(modelo_svm, datos_prueba)
+
 
 ```
 
