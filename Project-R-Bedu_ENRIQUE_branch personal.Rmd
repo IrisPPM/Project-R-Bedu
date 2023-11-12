@@ -15,6 +15,9 @@ library(dplyr)
 library(e1071)
 library(ggplot2)
 library(ISLR)
+library(caret)
+library(randomForest)
+
 
 ```
 
@@ -67,8 +70,10 @@ tail(dataset)
 
 ```{r}
 #CORRECCIÓN DE TIPOS DE DATOS
+
 dataset$smoking <- as.logical(dataset$smoking)
 dataset$dental.caries <- as.logical(dataset$dental.caries)
+
 
 ```
 
@@ -119,33 +124,132 @@ for (col in colnames(dataset)) {
 ```
 
 ```{r}
-#OUTLIERS EN DETALLE
 
-outliers_age <- boxplot(dataset$age)$out
-outliers_height <- boxplot(dataset$height.cm)$out
-outliers_weight.kg <- boxplot(dataset$weight.kg)$out
-outliers_systolic <- boxplot(dataset$systolic)$out
-outliers_relaxation <- boxplot(dataset$relaxation)$out
-outliers_fasting.blood.sugar <- boxplot(dataset$fasting.blood.sugar)$out
-outliers_Cholesterol <- boxplot(dataset$Cholesterol)$out
-outliers_triglyceride <- boxplot(dataset$triglyceride)$out
-outliers_hemoglobin <- boxplot(dataset$hemoglobin)$out
+#ELIMINAR OUTLIERS DE TODAS LAS COLUMNAS
+
+# Función para identificar y eliminar outliers
+eliminar_outliers <- function(data, cols) {
+  data_filtrado <- data
+  
+  for (col in cols) {
+    # Calcula los límites superior e inferior utilizando el método de Tukey
+    Q1 <- quantile(data_filtrado[[col]], 0.25)
+    Q3 <- quantile(data_filtrado[[col]], 0.75)
+    IQR <- Q3 - Q1
+    limite_inferior <- Q1 - 1.5 * IQR
+    limite_superior <- Q3 + 1.5 * IQR
+    
+    # Filtra los datos para excluir los outliers en la columna actual
+    data_filtrado <- data_filtrado %>% filter(data_filtrado[[col]] >= limite_inferior & data_filtrado[[col]] <= limite_superior)
+  }
+  
+  return(data_filtrado)
+}
+
+# Especifica las columnas a las que deseas aplicar la eliminación de outliers
+columnas_a_filtrar <- colnames(dataset)
+
+# Aplica la función para eliminar outliers
+dataset_filtrado <- eliminar_outliers(dataset, columnas_a_filtrar)
 
 ```
 
 
 ```{r}
-#DIAGRAMA DE DISPERSIÓN
+#DATASET FILTRADO
 
-ggplot(dataset, aes(x = Cholesterol, y = triglyceride)) +
-  geom_point() +
-  theme_grey() +
-  ggtitle("Datos Fumadores")
+par(mfrow=c(1, 1))
+boxplot(dataset_filtrado, col = "lightblue", border = "black")
+par(cex.axis=0.8) 
+par(las=2)
+
+```
+```{r}
+#DATOS FILTRADOS
+
+head(dataset_filtrado)
 ```
 
 
 
 ```{r}
+#DIMENSIONES  DEL DATASET FILTRADO
+
+dim(dataset_filtrado)
+
+```
+
+```{r}
+
+#BOXPLOT DE CADA COLUMNA DEL DATASET FILTRADO
+
+par(mfrow=c(2, 2))  # Cambia el número de filas y columnas de gráficos
+
+for (col in colnames(dataset_filtrado)) {
+  boxplot(dataset_filtrado[[col]], main = col, col = "lightblue", border = "black")
+}
+
+```
+```{r}
+#VARIABLE OBJETIVO COMO FACTOR
+dataset_filtrado$smoking <- as.factor(dataset_filtrado$smoking)
+```
+
+
+
+```{r}
+#DIVIDIR DATOS DE ENTRENAMIENTO Y DE PRUEBA
+
+set.seed(2023)
+
+proporcion_entrenamiento <- 0.8
+indice_particion <- createDataPartition(dataset_filtrado$smoking, p = proporcion_entrenamiento, list = FALSE)
+
+datos_entrenamiento <- dataset_filtrado[indice_particion, ]
+datos_prueba <- dataset_filtrado[-indice_particion, ]
+
+
+```
+
+
+
+
+```{r}
+#DATOS DE ENTRENAMIENTO Y PRUEBA
+
+dim(datos_entrenamiento)
+dim(datos_prueba)
+```
+
+
+```{r}
+sum(is.na(datos_entrenamiento))
+sum(is.na(datos_prueba))
+
+```
+I
+```{r}
+#MODELO DE MACHINE DECISION TREE
+
+library(rpart)
+
+modelo_arbol <- rpart(smoking ~ ., data = datos_entrenamiento, method = "class")
+
+
+```
+
+```{r}
+#MODELO DE MACHINE LEARNING SVM
+
+library(e1071)
+
+
+modelo_svm <- svm(smoking ~ ., data = datos_entrenamiento, kernel = "radial", cost = 1)
+```
+
+
+```{r}
+predicciones <- predict(modelo_svm, datos_prueba)
 
 ```
 
