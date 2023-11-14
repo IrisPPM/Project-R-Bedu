@@ -55,26 +55,11 @@ calculate_overweight_obesity <- function(data) {
 # Utilizar la función con el conjunto de datos Smokers
 result <- calculate_overweight_obesity(Smokers)
 
-
 # Graficando los resultados
 # Histograma de personas con bajo peso, peso normal, sobrepeso y obesidad
 barplot(result, main = "Distribución del IMC", 
         ylab = "Número de Personas", col = "skyblue", 
         names.arg = c("Bajo peso", "Normal", "Sobrepeso", "Obesidad"))
-
-# Buscando correlación entre IMC y fumar
-# Calcular el índice de masa corporal (IMC)
-bmi <- Smokers$"weight(kg)" / ((Smokers$"height(cm)" / 100)^2)
-
-# Crear un nuevo data frame con IMC y la columna "smoking"
-data_for_correlation <- data.frame(IMC = bmi, Smoking = Smokers$smoking)
-
-# Calcular la correlación de punto biserial
-correlation <- cor.test(data_for_correlation$IMC, data_for_correlation$Smoking, method = "biserial")
-
-# Imprimir la correlación
-print(paste("Correlación entre IMC y Smoking (punto biserial):", correlation$estimate))
-
 
 
 
@@ -100,14 +85,22 @@ for (col in column_names) {
 # Hay gente de entre 1.40 y 1.50 a pesar de que todos son mayores de 20 años.
 
 
+
+# Duplicando el dataframe para agregar imc
+# Crear una copia del dataframe Smokers
+smokers_2 <- Smokers
+# Calcular el índice de masa corporal (IMC) y agregarlo como una nueva columna
+smokers_2$BMI <- smokers_2$"weight(kg)" / ((smokers_2$"height(cm)" / 100)^2)
+# Verificar la adición de la nueva columna
+head(smokers_2)
+
+
 """
 Correlación de las columnas con smoking
 """
 
-# Seleccionar solo las variables numéricas para el cálculo de correlación
-numeric_variables <- sapply(Smokers, is.numeric)
 # Incluir la columna 'smoking' en el cálculo de la matriz de correlación
-correlation_matrix_smoking <- cor(Smokers[, numeric_variables, drop = FALSE], Smokers$smoking)
+correlation_matrix_smoking <- cor(smokers_2, Smokers$smoking)
 # Imprimir la matriz de correlación
 print("Matriz de correlación con respecto a 'smoking':")
 print(correlation_matrix_smoking)
