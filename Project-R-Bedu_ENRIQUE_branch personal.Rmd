@@ -7,6 +7,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+#install.packages("AER")
 ```
 
 ```{r}
@@ -17,6 +19,10 @@ library(ggplot2)
 library(ISLR)
 library(caret)
 library(randomForest)
+library(AER)
+library(readr)
+library(rpart)
+
 
 
 ```
@@ -27,7 +33,7 @@ library(randomForest)
 #CARGA DE DATOS
 setwd("C:/Users/enrik/OneDrive - UNIR/MOVIMIENTO LATERAL DE CARRERA/BECA BEDU 2023/PROTOTYPE DAY")
 dataset <- read.csv("Smokers.csv")
-
+View(dataset)
 ```
 
 ```{r}
@@ -57,12 +63,13 @@ dataset <- subset(dataset, select = -id)
 
 
 ```{r}
-
+#VISUALIZACIÓN DEL DATASET
 head(dataset)
 
 ```
 
 ```{r}
+#VISUALIZACIÓN DEL DATASET
 tail(dataset)
 ```
 
@@ -102,6 +109,26 @@ count(unique(dataset))
 ```
 
 ```{r}
+#ESTADÍSTICAS POR COLUMNA
+
+estadisticos <- sapply(dataset, function(col) {
+  c(
+    Promedio = mean(col),
+    Mediana = median(col),
+    Min = min(col),
+    Max = max(col),
+    Varianza = var(col),
+    Desviacion_Estándar = sd(col)
+  )
+})
+
+print(estadisticos)
+
+```
+
+
+
+```{r}
 #IDENTIFICAR OUTLIERS
 
 par(mfrow=c(1, 1))
@@ -122,6 +149,34 @@ for (col in colnames(dataset)) {
 }
 
 ```
+
+
+```{r}
+#HISTOGRAMA DE CADA COLUMNA
+
+par(mfrow=c(2, 2))  # Cambia el número de filas y columnas de gráficos
+
+num_columnas <- ncol(dataset)
+
+for (i in 1:(num_columnas - 2)) {
+  col <- colnames(dataset)[i]
+  hist(dataset[[col]], main = col, xlab = col, col = "lightblue", border = "black")
+}
+
+```
+
+
+```{r}
+#MATRIZ DE CORRELACIÓN ENTRE VARIABLES
+
+matriz_correlacion <- cor(dataset)
+
+#MAPA DE CALOR
+library(corrplot)  
+corrplot(matriz_correlacion, method = "color")
+```
+
+
 
 ```{r}
 
@@ -227,11 +282,9 @@ sum(is.na(datos_entrenamiento))
 sum(is.na(datos_prueba))
 
 ```
-I
+
 ```{r}
 #MODELO DE MACHINE DECISION TREE
-
-library(rpart)
 
 modelo_arbol <- rpart(smoking ~ ., data = datos_entrenamiento, method = "class")
 
@@ -242,7 +295,7 @@ predicciones_arbol <- predict(modelo_arbol, datos_prueba,type = "class")
 
 ```{r}
 
-#MATRIZ DE CONFUSIÓN
+#MATRIZ DE CONFUSIÓN DECISION TREE
 
 verdaderos <- datos_prueba$smoking  
 predicciones <- predicciones_arbol
@@ -254,20 +307,50 @@ print(mc)
 ```
 
 ```{r}
+#MODELO DE MACHINE REGRESIÓN LOGÍSTICA
+
+#rg_log <- glm(smoking ~ ., data = datos_entrenamiento, family = "binomial")
+#predicciones_rglog <- predict(rg_log, datos_prueba,type = "response")
+#predicciones_clase <- ifelse(predicciones_rglog > 0.5, TRUE, FALSE)
+```
+
+
+```{r}
+
+#MATRIZ DE CONFUSIÓN DECISION TREE
+
+#verdaderos <- datos_prueba$smoking  
+#predicciones <- predicciones_clase
+
+#mc <- confusionMatrix(predicciones, verdaderos)
+
+#print(mc)
+
+```
+
+
+```{r}
 #MODELO DE MACHINE LEARNING SVM
 
-library(e1071)
-
-
-#modelo_svm <- svm(smoking ~ ., data = datos_entrenamiento, kernel = "radial", cost = 1)
+#modelo_svm <- svm(smoking ~ ., data = datos_entrenamiento)
 #predicciones_svm <- predict(modelo_svm, datos_prueba,type = "class")
+
+#ERROR
+#Warning: Variable(s) ‘hearing.left.’ and ‘hearing.right.’ and ‘Urine.protein’ constant. Cannot scale data.
 
 
 ```
 
 
 ```{r}
+#MATRIZ DE CONFUSIÓN SVM
 
+#verdaderos <- datos_prueba$smoking  
+#predicciones <- predicciones_svm
+
+#mc <- confusionMatrix(predicciones, verdaderos)
+
+#print(mc)
 
 ```
 
