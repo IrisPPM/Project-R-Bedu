@@ -2,6 +2,9 @@ library(readr)
 library(corrplot)
 library(Hmisc) # al final no la usé
 library(polycor)
+library(ggplot2)
+library(dplyr)
+
 
 Smokers <- read_csv("data/Smokers.csv")
 
@@ -105,7 +108,7 @@ correlation_matrix_smoking <- cor(smokers_2, Smokers$smoking)
 print("Matriz de correlación con respecto a 'smoking':")
 print(correlation_matrix_smoking)
 
-"""
+"
 Variables Positivamente Correlacionadas: Variables como 'height(cm)', 'weight(kg)', 'triglyceride', 
 'hemoglobin', y 'Gtp' muestran una correlación positiva con 'smoking'. Esto significa que, en general, 
 a medida que aumenta el valor de 'smoking', también tienden a aumentar estas variables, y viceversa.
@@ -113,14 +116,44 @@ a medida que aumenta el valor de 'smoking', también tienden a aumentar estas va
 Variables Negativamente Correlacionadas: Variables como 'age', 'HDL', y 'LDL' muestran una correlación 
 negativa con 'smoking'. Esto indica que a medida que aumenta el valor de 'smoking', estas variables 
 tienden a disminuir, y viceversa.
-"""
+"
 
 # GRÁFICA
 # Calcular la matriz de correlación 
-correlation_matrix <- cor(Smokers[, -1])
+correlation_matrix <- cor(smokers_2[, -1])
 # Configurar la cuadrícula de gráficos
 par(mar = c(1, 1, 1, 1))
 # Crear el gráfico de matriz de correlación
 corrplot(correlation_matrix, method = "color", col = colorRampPalette(c("blue", "white", "red"))(100),
          tl.col = "black", tl.cex = 0.7)
+
+
+# Buscando índices que suelen estar relacionados con fumar, perfil lipídico, hipertensión, función renal
+# Calcular índices
+smokers_2$lipid_ratio <- (smokers_2$HDL + smokers_2$LDL) / smokers_2$Cholesterol
+smokers_2$systolic_relaxation_ratio <- smokers_2$systolic / smokers_2$relaxation
+smokers_2$renal_function <- smokers_2$"serum creatinine" / smokers_2$"Urine protein"
+
+# Calcular la correlación con la columna "smoking"
+cor_with_smoking <- sapply(smokers_2[, c("lipid_ratio", "systolic_relaxation_ratio", "renal_function", "BMI", "smoking")], function(x) cor(x, smokers_2$smoking))
+# Mostrar la correlación
+cor_with_smoking
+
+# En mapa de calor
+# Calcular la matriz de correlación
+cor_matrix2 <- cor(smokers_2[, c("lipid_ratio", "systolic_relaxation_ratio", "renal_function", "BMI", "smoking")])
+
+# Crear el mapa de calor
+heatmap(cor_matrix2, 
+        col = colorRampPalette(c("blue", "white", "red"))(100),
+        main = "Correlación con Smoking",
+        xlab = "Índices",
+        ylab = "Índices",
+        cex.main = 1.5,
+        cex.axis = 1.2,
+        margins = c(10, 10),
+        symm = TRUE)
+# No parece haber mucha correlación entre los índices, si a caso con renal_function y con
+# lipid ratio, pero el resto sale casi neutral
+
 
