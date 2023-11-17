@@ -1,0 +1,356 @@
+---
+title: "SMOKERS"
+author: "Enrique Olvera Monroy"
+date: "2023-11-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#install.packages("AER")
+```
+
+```{r}
+#CARGA DE LIBRERIAS
+library(dplyr)
+library(e1071)
+library(ggplot2)
+library(ISLR)
+library(caret)
+library(randomForest)
+library(AER)
+library(readr)
+library(rpart)
+
+
+
+```
+
+
+
+```{r}
+#CARGA DE DATOS
+setwd("C:/Users/enrik/OneDrive - UNIR/MOVIMIENTO LATERAL DE CARRERA/BECA BEDU 2023/PROTOTYPE DAY")
+dataset <- read.csv("Smokers.csv")
+View(dataset)
+```
+
+```{r}
+#EXPLORACIÓN DE LA ESTRUCTURA DEL DATASET
+str(dataset)
+
+```
+Como podemos observar, el conjunto de datos tiene 159256 observaciones y 24 variables. Es un dataset sobre el historial médico de fumadores y no fumadores.
+
+```{r}
+dim(dataset)
+```
+```{r}
+nombres_columnas <- colnames(dataset)
+print(nombres_columnas)
+```
+
+
+
+```{r}
+#ELIMINAR COLUMNA ID (VARIABLE CATEGÓRICA)
+
+dataset <- subset(dataset, select = -id)
+
+
+```
+
+
+```{r}
+#VISUALIZACIÓN DEL DATASET
+head(dataset)
+
+```
+
+```{r}
+#VISUALIZACIÓN DEL DATASET
+tail(dataset)
+```
+
+
+
+```{r}
+#CORRECCIÓN DE TIPOS DE DATOS
+
+dataset$smoking <- as.logical(dataset$smoking)
+dataset$dental.caries <- as.logical(dataset$dental.caries)
+
+
+```
+
+
+
+```{r}
+#RESUMEN ESTADÍSTICO
+
+summary(dataset)
+
+```
+
+```{r}
+#VALORES NA
+
+sum(is.na(dataset))
+
+```
+
+```{r}
+
+#VALORES ÚNICOS
+
+count(unique(dataset))
+
+```
+
+```{r}
+#ESTADÍSTICAS POR COLUMNA
+
+estadisticos <- sapply(dataset, function(col) {
+  c(
+    Promedio = mean(col),
+    Mediana = median(col),
+    Min = min(col),
+    Max = max(col),
+    Varianza = var(col),
+    Desviacion_Estándar = sd(col)
+  )
+})
+
+print(estadisticos)
+
+```
+
+
+
+```{r}
+#IDENTIFICAR OUTLIERS
+
+par(mfrow=c(1, 1))
+boxplot(dataset, col = "lightblue", border = "black")
+par(cex.axis=0.8) 
+par(las=2)
+
+```
+
+```{r}
+
+#BOXPLOT DE CADA COLUMNA
+
+par(mfrow=c(2, 2))  # Cambia el número de filas y columnas de gráficos
+
+for (col in colnames(dataset)) {
+  boxplot(dataset[[col]], main = col, col = "lightblue", border = "black")
+}
+
+```
+
+
+```{r}
+#HISTOGRAMA DE CADA COLUMNA
+
+par(mfrow=c(2, 2))  # Cambia el número de filas y columnas de gráficos
+
+num_columnas <- ncol(dataset)
+
+for (i in 1:(num_columnas - 2)) {
+  col <- colnames(dataset)[i]
+  hist(dataset[[col]], main = col, xlab = col, col = "lightblue", border = "black")
+}
+
+```
+
+
+```{r}
+#MATRIZ DE CORRELACIÓN ENTRE VARIABLES
+
+matriz_correlacion <- cor(dataset)
+
+#MAPA DE CALOR
+library(corrplot)  
+corrplot(matriz_correlacion, method = "color")
+```
+
+
+
+```{r}
+
+#ELIMINAR OUTLIERS DE TODAS LAS COLUMNAS
+
+# Función para identificar y eliminar outliers
+eliminar_outliers <- function(data, cols) {
+  data_filtrado <- data
+  
+  for (col in cols) {
+    # Calcula los límites superior e inferior utilizando el método de Tukey
+    Q1 <- quantile(data_filtrado[[col]], 0.25)
+    Q3 <- quantile(data_filtrado[[col]], 0.75)
+    IQR <- Q3 - Q1
+    limite_inferior <- Q1 - 1.5 * IQR
+    limite_superior <- Q3 + 1.5 * IQR
+    
+    # Filtra los datos para excluir los outliers en la columna actual
+    data_filtrado <- data_filtrado %>% filter(data_filtrado[[col]] >= limite_inferior & data_filtrado[[col]] <= limite_superior)
+  }
+  
+  return(data_filtrado)
+}
+
+# Especifica las columnas a las que deseas aplicar la eliminación de outliers
+columnas_a_filtrar <- colnames(dataset)
+
+# Aplica la función para eliminar outliers
+dataset_filtrado <- eliminar_outliers(dataset, columnas_a_filtrar)
+
+```
+
+
+```{r}
+#DATASET FILTRADO
+
+par(mfrow=c(1, 1))
+boxplot(dataset_filtrado, col = "lightblue", border = "black")
+par(cex.axis=0.8) 
+par(las=2)
+
+```
+```{r}
+#DATOS FILTRADOS
+
+head(dataset_filtrado)
+```
+
+
+
+```{r}
+#DIMENSIONES  DEL DATASET FILTRADO
+
+dim(dataset_filtrado)
+
+```
+
+```{r}
+
+#BOXPLOT DE CADA COLUMNA DEL DATASET FILTRADO
+
+par(mfrow=c(2, 2))  # Cambia el número de filas y columnas de gráficos
+
+for (col in colnames(dataset_filtrado)) {
+  boxplot(dataset_filtrado[[col]], main = col, col = "lightblue", border = "black")
+}
+
+```
+```{r}
+#VARIABLE OBJETIVO COMO FACTOR
+dataset_filtrado$smoking <- as.factor(dataset_filtrado$smoking)
+```
+
+
+
+```{r}
+#DIVIDIR DATOS DE ENTRENAMIENTO Y DE PRUEBA
+
+set.seed(2023)
+
+proporcion_entrenamiento <- 0.8
+indice_particion <- createDataPartition(dataset_filtrado$smoking, p = proporcion_entrenamiento, list = FALSE)
+
+datos_entrenamiento <- dataset_filtrado[indice_particion, ]
+datos_prueba <- dataset_filtrado[-indice_particion, ]
+
+
+```
+
+
+
+
+```{r}
+#DATOS DE ENTRENAMIENTO Y PRUEBA
+
+dim(datos_entrenamiento)
+dim(datos_prueba)
+```
+
+
+```{r}
+sum(is.na(datos_entrenamiento))
+sum(is.na(datos_prueba))
+
+```
+
+```{r}
+#MODELO DE MACHINE DECISION TREE
+
+modelo_arbol <- rpart(smoking ~ ., data = datos_entrenamiento, method = "class")
+
+predicciones_arbol <- predict(modelo_arbol, datos_prueba,type = "class")
+
+```
+
+
+```{r}
+
+#MATRIZ DE CONFUSIÓN DECISION TREE
+
+verdaderos <- datos_prueba$smoking  
+predicciones <- predicciones_arbol
+
+mc <- confusionMatrix(predicciones, verdaderos)
+
+print(mc)
+
+```
+
+```{r}
+#MODELO DE MACHINE REGRESIÓN LOGÍSTICA
+
+#rg_log <- glm(smoking ~ ., data = datos_entrenamiento, family = "binomial")
+#predicciones_rglog <- predict(rg_log, datos_prueba,type = "response")
+#predicciones_clase <- ifelse(predicciones_rglog > 0.5, TRUE, FALSE)
+```
+
+
+```{r}
+
+#MATRIZ DE CONFUSIÓN DECISION TREE
+
+#verdaderos <- datos_prueba$smoking  
+#predicciones <- predicciones_clase
+
+#mc <- confusionMatrix(predicciones, verdaderos)
+
+#print(mc)
+
+```
+
+
+```{r}
+#MODELO DE MACHINE LEARNING SVM
+
+#modelo_svm <- svm(smoking ~ ., data = datos_entrenamiento)
+#predicciones_svm <- predict(modelo_svm, datos_prueba,type = "class")
+
+#ERROR
+#Warning: Variable(s) ‘hearing.left.’ and ‘hearing.right.’ and ‘Urine.protein’ constant. Cannot scale data.
+
+
+```
+
+
+```{r}
+#MATRIZ DE CONFUSIÓN SVM
+
+#verdaderos <- datos_prueba$smoking  
+#predicciones <- predicciones_svm
+
+#mc <- confusionMatrix(predicciones, verdaderos)
+
+#print(mc)
+
+```
+
